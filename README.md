@@ -38,18 +38,6 @@ AUTH_SERVICE_URL=http://auth-service:8000
 
 > Note: The JWT_PUBLIC_KEY points to the auth-service endpoint that returns the public key.
 
-### 🐳 Run with Docker Compose
-
-```bash
-docker-compose -f docker-compose.yml up --build
-```
-
-This will:
-
-- Build and start the Upload Service
-- Automatically run `php artisan test`
-- Start Laravel on port `8001`
-
 ### 📡 API Endpoints
 
 | Method | Endpoint     | Middleware   | Description                    |
@@ -158,58 +146,6 @@ networks:
     driver: bridge
 ```
 
-### 🐳 docker-compose.auth.yml
-
-```yaml
-services:
-  auth-service:
-    build: .
-    container_name: auth-service
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/var/www/html
-    depends_on:
-      - auth-db
-    networks:
-      - microservice
-
-  auth-db:
-    image: mysql:8
-    container_name: auth-db
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: auth_db
-    ports:
-      - "3307:3306"
-    networks:
-      - microservice
-
-networks:
-  microservice:
-    driver: bridge
-```
-
-### 🐳 docker-compose.upload.yml
-
-```yaml
-services:
-  upload-service:
-    build: .
-    container_name: upload-service
-    ports:
-      - "8001:8001"
-    volumes:
-      - .:/var/www/html
-    depends_on:
-      - auth-service
-    networks:
-      - microservice
-
-networks:
-  microservice:
-    driver: bridge
-```
 
 
 # Build and start all services
