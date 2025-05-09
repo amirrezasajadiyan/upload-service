@@ -21,7 +21,7 @@ class JwtMiddleware
         try {
             $publicKey = file_get_contents(env('JWT_PUBLIC_KEY_PATH'));
             $decoded = JWT::decode($token, new Key($publicKey, 'RS256'));
-            $request->merge(['jwt_user' => (array)$decoded->sub]); // optional: store user info
+            $request->merge(['jwt_user' => (array)$decoded->sub]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Invalid token', 'error' => $e->getMessage()], 401);
         }

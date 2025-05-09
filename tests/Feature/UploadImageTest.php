@@ -28,11 +28,8 @@ class UploadImageTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
         ]);
-//        dd($response['token']);
+
         $token = 'Bearer ' . $response['token'];
-
-        // Simulate a real JWT token issued by auth service
-
 
         $response = $this->postJson('/api/upload', [
             'image' => UploadedFile::fake()->image('photo.jpg'),

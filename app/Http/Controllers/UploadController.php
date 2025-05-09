@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UploadRequest;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
 
 class UploadController extends Controller
 {
-    public function store(UploadRequest $request)
+    public function __invoke(UploadRequest $request): JsonResponse
     {
         $path = $request->file('image')->store('uploads', 'public');
         return response()->json([
@@ -15,5 +16,4 @@ class UploadController extends Controller
             'path' => $path,
         ]);
     }
-
 }
