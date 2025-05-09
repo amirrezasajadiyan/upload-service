@@ -12,7 +12,7 @@
 ### 1. Clone the project
 
 ```bash
-git clone https://your-repo-url/upload-service.git
+git clone https://github.com/amirrezasajadiyan/upload-service.git
 cd upload-service
 ```
 
