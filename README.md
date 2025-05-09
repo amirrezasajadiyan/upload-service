@@ -1,176 +1,216 @@
-# 📷 Upload Service (Laravel Microservice)
+## 🛠 Tech Stack
 
-This microservice is responsible for securely uploading images to the server using JWT-based authentication. It is part of a microservices architecture and relies on a separate **Auth Service** for issuing JWT tokens.
+- Laravel 12
+- PHP 8.4
+- JWT Auth (RSA Public Key Verification)
+- Docker & Docker Compose
+- File Uploads via `storage/app/public`
+- PHPUnit for automated tests
 
----
+## 🚀 Quick Start
 
-## 🚀 Features
+### 1. Clone the project
 
-- JWT Authentication via RS256 public/private key pair
-- Secure image upload via `POST /api/upload`
-- Middleware protection with custom JWT verification
-- Dockerized for easy deployment
-- PHPUnit test coverage
+```bash
+git clone https://your-repo-url/upload-service.git
+cd upload-service
+```
 
----
+### 2. Create .env file
 
-## 📁 Folder Structure Overview
+```bash
+cp .env.example .env
+```
+
+Then configure the .env file:
+
+```env
+APP_NAME=UploadService
+APP_URL=http://localhost:8001
+
+FILESYSTEM_DISK=public
+
+JWT_PUBLIC_KEY=http://auth-service:8000/api/public-key
+JWT_ALGO=RS256
+
+AUTH_SERVICE_URL=http://auth-service:8000
+```
+
+> Note: The JWT_PUBLIC_KEY points to the auth-service endpoint that returns the public key.
+
+### 🐳 Run with Docker Compose
+
+```bash
+docker-compose -f docker-compose.upload.yml up --build
+```
+
+This will:
+
+- Build and start the Upload Service
+- Automatically run `php artisan test`
+- Start Laravel on port `8001`
+
+### 📡 API Endpoints
+
+| Method | Endpoint     | Middleware   | Description                    |
+|--------|--------------|--------------|--------------------------------|
+| POST   | `/api/upload`| `jwt.auth`   | Upload image with JWT          |
+
+### ✅ Run Tests
+
+To manually run tests inside the container:
+
+```bash
+docker-compose exec upload-service php artisan test
+```
+
+### 📁 Project Structure (important files)
 
 ```
 upload-service/
 ├── app/
-├── tests/
-├── routes/api.php
-├── app/Http/Controllers/UploadController.php
-├── app/Http/Middleware/JwtMiddleware.php
+│   └── Http/
+│       └── Controllers/
+│           └── UploadController.php
+├── routes/
+│   └── api.php
 ├── Dockerfile
-├── docker-compose.yml
-└── keys/jwt_public.key
+├── docker-compose.upload.yml
+├── tests/
+│   └── Feature/
+│       └── UploadTest.php
 ```
+
+### 🔗 Integration with Auth Service
+
+- Upload service fetches the JWT public key from `auth-service`.
+- Validates JWT tokens in the `Authorization: Bearer <token>` header.
+- Ensure both services use the shared Docker network.
+
+### 🧪 Development Status
+
+- ✅ Secure file upload
+- ✅ JWT token validation
+- ✅ Public key fetching from auth-service
+- ✅ Automated tests
+- ✅ Integration-ready with auth-service
 
 ---
 
-## 🛠 Requirements
+## 📁 Suggested Project Structure
 
-- Docker & Docker Compose
-- Laravel 10+ (or higher)
-- JWT token issued by [Auth Service](http://auth-service:8000)
-- RS256 public key provided via `.env` or Docker volume
-
----
-
-## ⚙️ Environment Variables
-
-You can configure these in `.env` or pass via Docker:
-
-```env
-APP_ENV=local
-APP_DEBUG=true
-APP_KEY=base64:YourAppKeyHere
-
-JWT_PUBLIC_KEY_PATH=/var/www/html/keys/jwt_public.key
+```
+microservices-root/
+├── auth-service/
+│ ├── Dockerfile
+│ ├── docker-compose.auth.yml
+│ └── ...
+├── upload-service/
+│ ├── Dockerfile
+│ ├── docker-compose.upload.yml
+│ └── ...
+├── docker-compose.yml ← connects both services together
 ```
 
----
-
-## 🐳 Docker Setup
-
-### 1. Build and Run Upload Service
-
-```bash
-docker compose up --build upload
-```
-
-The service will be available at: `http://localhost:8081`
-
----
-
-## 🔐 JWT Authentication
-
-### Middleware
-
-All image upload requests must include a valid JWT token in the `Authorization` header:
-
-```http
-Authorization: Bearer <your_jwt_token>
-```
-
-The token is verified using the `jwt.auth` middleware (`JwtMiddleware.php`) and the public key defined in `JWT_PUBLIC_KEY_PATH`.
-
----
-
-## 📦 API Endpoint
-
-### `POST /api/upload`
-
-**Headers:**
-```http
-Authorization: Bearer <jwt_token>
-```
-
-**Form Data:**
-- `image`: A valid image file (jpg, png, etc.)
-
-**Response:**
-```json
-{
-  "message": "Image uploaded successfully.",
-  "path": "uploads/photo.jpg"
-}
-```
-
----
-
-## ✅ Automated Tests
-
-Run feature tests using:
-
-```bash
-php artisan test
-```
-
-Tests include:
-- Unauthorized access without JWT
-- Valid upload with correct JWT issued by Auth Service
-
----
-
-## 🧪 Sample Test Snippet
-
-```php
-$response = $this->postJson('/api/upload', [
-    'image' => UploadedFile::fake()->image('photo.jpg'),
-], [
-    'Authorization' => 'Bearer ' . $jwt,
-]);
-
-$response->assertStatus(200)
-    ->assertJsonStructure(['message', 'path']);
-```
-
----
-
-## 🔐 Public Key Location
-
-Ensure the JWT public key is mounted to the container:
+## 🐳 Root `docker-compose.yml`
 
 ```yaml
-volumes:
-  - ./keys/jwt_public.key:/var/www/html/keys/jwt_public.key:ro
+version: "3.8"
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./auth-service:/var/www/html
+    depends_on:
+      - auth-db
+    networks:
+      - microservice
+
+  upload-service:
+    build:
+      context: ./upload-service
+    container_name: upload-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./upload-service:/var/www/html
+    depends_on:
+      - auth-service
+    networks:
+      - microservice
+
+  auth-db:
+    image: mysql:8
+    container_name: auth-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3307:3306"
+    networks:
+      - microservice
+
+networks:
+  microservice:
+    driver: bridge
 ```
 
-Or manually place it in `storage/` and point `JWT_PUBLIC_KEY_PATH` to that path.
+### 🐳 docker-compose.auth.yml
 
----
+```yaml
+version: "3.8"
+services:
+  auth-service:
+    build: .
+    container_name: auth-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - auth-db
+    networks:
+      - microservice
 
-## 📷 Uploaded Files
+  auth-db:
+    image: mysql:8
+    container_name: auth-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3307:3306"
+    networks:
+      - microservice
 
-Uploaded images are stored in:
-
+networks:
+  microservice:
+    driver: bridge
 ```
-storage/app/public/uploads/
+
+### 🐳 docker-compose.upload.yml
+
+```yaml
+version: "3.8"
+services:
+  upload-service:
+    build: .
+    container_name: upload-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - auth-service
+    networks:
+      - microservice
+
+networks:
+  microservice:
+    driver: bridge
 ```
-
-Ensure you run:
-
-```bash
-php artisan storage:link
 ```
-
-To make them accessible via `public/storage/uploads/`.
-
----
-
-## 🤝 Integration with Auth Service
-
-This service expects JWTs issued by the **Auth Service** (e.g., at `http://auth-service:8000/api/login`).
-
-Make sure both services share the same key pair:
-- Auth Service uses **private key** to sign
-- Upload Service uses **public key** to verify
-
----
-
-## 🧼 License
-
-MIT — Free to use and modify.
