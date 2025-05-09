@@ -41,7 +41,7 @@ AUTH_SERVICE_URL=http://auth-service:8000
 ### 🐳 Run with Docker Compose
 
 ```bash
-docker-compose -f docker-compose.upload.yml up --build
+docker-compose -f docker-compose.yml up --build
 ```
 
 This will:
@@ -115,7 +115,6 @@ microservices-root/
 ## 🐳 Root `docker-compose.yml`
 
 ```yaml
-version: "3.8"
 services:
   auth-service:
     build:
@@ -162,7 +161,6 @@ networks:
 ### 🐳 docker-compose.auth.yml
 
 ```yaml
-version: "3.8"
 services:
   auth-service:
     build: .
@@ -195,7 +193,6 @@ networks:
 ### 🐳 docker-compose.upload.yml
 
 ```yaml
-version: "3.8"
 services:
   upload-service:
     build: .
@@ -213,4 +210,64 @@ networks:
   microservice:
     driver: bridge
 ```
-```
+
+
+# Build and start all services
+docker-compose up --build -d
+
+# Watch logs (optional)
+docker-compose logs -f
+
+This will:
+
+    Start auth-service (port 8000)
+    Start upload-service (port 8001)
+    Start MySQL DB (port 3307)
+
+🧪 2. Run Tests
+
+docker-compose exec auth-service php artisan test
+docker-compose exec upload-service php artisan test
+
+🧱 3. Access Containers (for debugging)
+
+docker-compose exec auth-service bash
+docker-compose exec upload-service bash
+
+4. Database Setup (Auth Service)
+# Access auth-service container
+docker-compose exec auth-service bash
+
+# Run Laravel migrations
+php artisan migrate --seed
+
+Use tools like Postman , curl , or Thunder Client  to test:
+Auth Service (port 8000):
+
+    Register : POST /api/register
+    Login : POST /api/login → returns JWT token
+
+
+Upload Service (port 8001):
+
+    Upload Image : POST /api/upload
+    Add Authorization: Bearer <your-jwt-token> header
+    Send a multipart/form-data image file in the request body.
+
+
+6. Rebuild or Restart
+   If you make changes to code:
+
+# Rebuild services
+docker-compose build
+
+# Restart specific service
+docker-compose restart auth-service
+docker-compose restart upload-service
+
+7. Clean Up
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (e.g., database data)
+docker-compose down -v

@@ -1,0 +1,16 @@
+services:
+  upload-service:
+    build: .
+    container_name: upload-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - auth-service
+    networks:
+      - microservice
+
+networks:
+  microservice:
+    driver: bridge
