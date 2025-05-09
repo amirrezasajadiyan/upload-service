@@ -1,0 +1,43 @@
+services:
+    upload:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: upload-service
+        ports:
+            - "8081:80"
+        volumes:
+            - .:/var/www/html
+            - ./keys/jwt_public.key:/var/www/html/keys/jwt_public.key:ro
+        environment:
+            APP_ENV: local
+            APP_DEBUG: true
+            APP_KEY: base64:YourBase64AppKeyHere
+            JWT_PUBLIC_KEY_PATH: /var/www/html/keys/jwt_public.key
+            DB_CONNECTION: mysql
+            DB_HOST: upload-mysql
+            DB_PORT: 3306
+            DB_DATABASE: upload_db
+            DB_USERNAME: root
+            DB_PASSWORD: secret
+        depends_on:
+            - upload-mysql
+
+    upload-mysql:
+        image: mysql:8
+        container_name: upload-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: upload_db
+            MYSQL_ROOT_PASSWORD: secret
+        volumes:
+            - upload_mysql_data:/var/lib/mysql
+        ports:
+            - "3308:3306"
+
+volumes:
+    upload_mysql_data:
+networks:
+    default:
+        name: shared-network
+        external: true
